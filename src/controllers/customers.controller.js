@@ -14,7 +14,8 @@ export async function getCustomersById(req, res){
 
     try {
         const customers = await db.query(`SELECT * FROM customers WHERE id=$1;`, [id])
-        console.log(customers.rows)
+        if(!customers.rows[0]) return res.status(404).send("Esse usuario nao existe")
+
         res.send(customers.rows[0])
     } catch (err){
         res.status(500).send(err.message)
