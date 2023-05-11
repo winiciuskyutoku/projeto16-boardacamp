@@ -21,3 +21,21 @@ export async function getCustomersById(req, res){
         res.status(500).send(err.message)
     }
 }
+
+export async function postCustomers(req, res){
+    const {name, phone, cpf, birthday} = req.body
+
+    try {
+        const customers = await db.query(`SELECT * FROM customers WHERE name='${name}';`)
+
+        console.log(customers.rows[0])
+        if(customers.rows[0]) return res.status(409).send("Cpf de usuario ja existente")
+
+        await db.query(`INSERT INTO customers ("name", "phone", "cpf", "birthday") VALUES ('${name}', '${phone}', '${cpf}', '${birthday}');`)
+        
+
+        res.sendStatus(201)
+    } catch (err){
+        res.status(500).send(err.message)
+    }
+}
