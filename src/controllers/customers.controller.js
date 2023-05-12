@@ -39,3 +39,27 @@ export async function postCustomers(req, res){
         res.status(500).send(err.message)
     }
 }
+
+export async function updateCustomers(req, res){
+    const {name, phone, cpf, birthday} = req.body
+    const {id} = req.params
+    
+    try {
+
+        const customers = await db.query(`SELECT "cpf" FROM customers WHERE id <> $1 AND "cpf" = '${cpf}';`, [id])
+        console.log(customers.rows)
+
+        if(customers.rows.length !== 0) return res.status(409).send("Cpf de usuario ja existente")
+
+        await db.query(
+            `UPDATE customers 
+            SET "name" = '${name}', "phone" = '${phone}', "cpf" = '${cpf}', "birthday" = '${birthday}'
+            WHERE id = $1;`, [id]
+        )
+        
+
+        res.sendStatus(200)
+    } catch (err){
+        res.status(500).send(err.message)
+    }
+}
