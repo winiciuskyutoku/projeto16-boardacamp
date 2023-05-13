@@ -63,11 +63,9 @@ export async function postRentals(req, res) {
     }
 }
 
-export async function finishRentals(req, res){
+export async function finishRental(req, res){
     const {id} = req.params
     const rentDate =  dayjs().format('YYYY-MM-DD')
-
-    console.log(typeof(rentDate))
 
     try {
         const checkRental = await db.query(`SELECT * FROM rentals WHERE id = $1;`, [id])
@@ -81,11 +79,26 @@ export async function finishRentals(req, res){
         if(day > delayFee.rows[0].daysRented) {
             await db.query(`UPDATE rentals SET "delayFee" = ${(day - delayFee.rows[0].daysRented) * delayFee.rows[0].originalPrice} WHERE id = $1;`, [id])
         } else {
-            await db.query(`UPDATE rentals SET "delayFee" = 0 WHERE id = $i;`, [id])
+            await db.query(`UPDATE rentals SET "delayFee" = 0 WHERE id = $1;`, [id])
         }
 
         await db.query(`UPDATE rentals SET "returnDate" = '${rentDate}' WHERE id = $1;`, [id])
 
+        res.sendStatus(200)
+    } catch (err){
+        res.status(500).send(err.message)
+    }
+}
+
+export async function delteRental(req, res){
+    const {id} = req.params
+
+    try {
+        const checkRental = await db.query(`SELECT * FROM rentals WHERE id = $1;`, [id])
+        if(!checkRental.rows[0]) return res.status(404).send("Esse aluguel nao existe!")
+        if(checkRental.rows[0].returnDate === null) return res.status(400).send("Esse aluguel ainda nao foi finalziado")
+
+        await db.query(`DELETE FROM rentals WHERE id = $1;`, [id])
         res.sendStatus(200)
     } catch (err){
         res.status(500).send(err.message)
