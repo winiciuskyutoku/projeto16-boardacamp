@@ -65,7 +65,7 @@ export async function postRentals(req, res) {
 
 export async function finishRental(req, res){
     const {id} = req.params
-    const rentDate =  dayjs().format('YYYY-MM-DD')
+    const rentDay =  dayjs().format('YYYY-MM-DD')
 
     try {
         const checkRental = await db.query(`SELECT * FROM rentals WHERE id = $1;`, [id])
@@ -74,6 +74,9 @@ export async function finishRental(req, res){
 
         const delayFee = await db.query(`SELECT * FROM rentals WHERE id = $1;`, [id])
         const fee = delayFee.rows[0].rentDate
+
+
+        console.log(fee)
         const day = Math.floor((Date.now() - fee) / 86400000)
 
         if(day > delayFee.rows[0].daysRented) {
@@ -82,7 +85,7 @@ export async function finishRental(req, res){
             await db.query(`UPDATE rentals SET "delayFee" = 0 WHERE id = $1;`, [id])
         }
 
-        await db.query(`UPDATE rentals SET "returnDate" = '${rentDate}' WHERE id = $1;`, [id])
+        await db.query(`UPDATE rentals SET "returnDate" = '${rentDay}' WHERE id = $1;`, [id])
 
         res.sendStatus(200)
     } catch (err){
