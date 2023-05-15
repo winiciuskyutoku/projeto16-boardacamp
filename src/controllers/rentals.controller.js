@@ -49,8 +49,11 @@ export async function postRentals(req, res) {
         const checkGame = await db.query(`SELECT * FROM games WHERE id = ${gameId}`)
         if(!checkGame.rows[0]) return res.status(400).send("Esse videogame nao existe")
 
+        const checkRentalsLenght = await db.query(`SELECT * FROM rentals WHERE "gameId" = ${gameId}`)
         const checkAvailability = await db.query(`SELECT "games"."stockTotal" FROM games WHERE id = ${gameId}`)
-        if(checkAvailability.rows[0].stockTotal <= 0) return res.status(400).send("Game indisponivel")
+
+        console.log(checkRentalsLenght.rows)
+        if(checkRentalsLenght.rows.length >= checkAvailability.rows[0].stockTotal) return res.status(400).send("Game indisponivel")
 
         await db.query(`
             INSERT INTO rentals ("customerId", "gameId", "rentDate", "daysRented", "returnDate", "originalPrice", "delayFee")
@@ -69,18 +72,15 @@ export async function finishRental(req, res){
 
     try {
         const checkRental = await db.query(`SELECT * FROM rentals WHERE id = $1;`, [id])
-        if(!checkRental.rows[0].id) return res.status(404).send("Esse aluguel nao existe!")
+        if(!checkRental.rows[0]) return res.status(404).send("Esse aluguel nao existe!")
         if(checkRental.rows[0].returnDate !== null) return res.status(400).send("Esse item ja foi devolvido")
 
-        const delayFee = await db.query(`SELECT * FROM rentals WHERE id = $1;`, [id])
-        const fee = delayFee.rows[0].rentDate
+        const fee = checkRental.rows[0].rentDate
 
+        const day = Math.floor(((Date.now() - fee)) / 86400000) - checkRental.rows[0].daysRented
 
-        console.log(fee)
-        const day = Math.floor((Date.now() - fee) / 86400000)
-
-        if(day > delayFee.rows[0].daysRented) {
-            await db.query(`UPDATE rentals SET "delayFee" = ${(day - delayFee.rows[0].daysRented) * delayFee.rows[0].originalPrice} WHERE id = $1;`, [id])
+        if(day > 0) {
+            await db.query(`UPDATE rentals SET "delayFee" = ${day * (checkRental.rows[0].originalPrice / checkRental.rows[0].daysRented)} WHERE id = $1;`, [id])
         } else {
             await db.query(`UPDATE rentals SET "delayFee" = 0 WHERE id = $1;`, [id])
         }
